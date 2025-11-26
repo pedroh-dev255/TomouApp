@@ -1,4 +1,4 @@
-package com.tomouapp
+package com.tomou
 
 import android.app.Application
 import com.facebook.react.PackageList

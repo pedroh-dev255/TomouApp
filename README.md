@@ -1,5 +1,12 @@
 # Tomou? — App de Controle de Medicamentos
-Gerencie seus medicamentos, receba lembretes nos horários certos e acompanhe sua rotina de tratamentos de forma simples e organizada.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React%20Native-0.82.1-61dafb?style=for-the-badge&logo=react" />
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178c6?style=for-the-badge&logo=typescript" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge">
+</p>
+
+Tomou? é um aplicativo desenvolvido em React Native para ajudar usuários a gerenciar medicamentos, organizar horários, receber lembretes e manter uma rotina de tratamento de forma simples e eficaz.
 
 ---
 
@@ -37,10 +44,10 @@ O app é pensado para ser leve, rápido e fácil de usar.
 ---
 
 ## 🛠️ Tecnologias Utilizadas
-- React Native (CLI)
-- TypeScript (opcional)
+- React Native 0.82.1
+- TypeScript
 - React Navigation
-- AsyncStorage ou SQLite
+- AsyncStorage
 - React Native Push Notification
 - Firebase
 - Day.js

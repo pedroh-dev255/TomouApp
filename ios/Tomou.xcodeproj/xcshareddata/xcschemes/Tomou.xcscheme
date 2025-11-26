@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "tomouApp.app"
-               BlueprintName = "tomouApp"
-               ReferencedContainer = "container:tomouApp.xcodeproj">
+               BuildableName = "Tomou.app"
+               BlueprintName = "Tomou"
+               ReferencedContainer = "container:Tomou.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "tomouAppTests.xctest"
-               BlueprintName = "tomouAppTests"
-               ReferencedContainer = "container:tomouApp.xcodeproj">
+               BuildableName = "TomouTests.xctest"
+               BlueprintName = "TomouTests"
+               ReferencedContainer = "container:Tomou.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "tomouApp.app"
-            BlueprintName = "tomouApp"
-            ReferencedContainer = "container:tomouApp.xcodeproj">
+            BuildableName = "Tomou.app"
+            BlueprintName = "Tomou"
+            ReferencedContainer = "container:Tomou.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "tomouApp.app"
-            BlueprintName = "tomouApp"
-            ReferencedContainer = "container:tomouApp.xcodeproj">
+            BuildableName = "Tomou.app"
+            BlueprintName = "Tomou"
+            ReferencedContainer = "container:Tomou.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
