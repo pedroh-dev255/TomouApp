@@ -37,7 +37,7 @@ async function load(key) {
     } catch (e) { console.warn("load error", e); return null; }
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
     const [meds, setMeds] = useState([]);
     const [events, setEvents] = useState({});
     const [selectedDate, setSelectedDate] = useState(today());
@@ -203,6 +203,16 @@ export default function HomeScreen() {
     const renderHeader = useCallback(() => (
         <View style={styles.containerPadding}>
             <Text style={styles.title}>Tomou? 💊 — Hoje: {selectedDate}</Text>
+
+            <TouchableOpacity 
+                style={styles.updateButton}
+                onPress={() => navigation.navigate('Releases')}
+            >
+
+                <Text style={{ color: '#4f46e5', fontWeight: '600' }}>
+                  <Icon name="update" size={20} color={styles.primaryText.color} /> 
+                  Verificar Atualizações</Text>
+            </TouchableOpacity>
 
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
