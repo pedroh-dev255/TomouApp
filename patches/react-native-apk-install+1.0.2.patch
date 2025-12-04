@@ -6,7 +6,7 @@ index 0000000..a895851
 @@ -0,0 +1 @@
 +BDDF1C7E8C6C9E46276C40C17984934BDE64051CA14C5FCB7B6A16AC259C7E0D
 diff --git a/node_modules/react-native-apk-install/android/build.gradle b/node_modules/react-native-apk-install/android/build.gradle
-index 6f1be8e..00006fe 100644
+index 6f1be8e..0aa73b4 100644
 --- a/node_modules/react-native-apk-install/android/build.gradle
 +++ b/node_modules/react-native-apk-install/android/build.gradle
 @@ -1,7 +1,7 @@
@@ -23,12 +23,12 @@ index 6f1be8e..00006fe 100644
  
  android {
 -    compileSdkVersion 28
-+    compileSdkVersion 30
++    compileSdkVersion rootProject.ext.get('compileSdkVersion')
  
      defaultConfig {
          minSdkVersion 16
 -        targetSdkVersion 27
-+        targetSdkVersion 26
++        targetSdkVersion rootProject.ext.get('targetSdkVersion')
          versionCode 1
          versionName "1.0"
      }
