@@ -10,6 +10,7 @@ import {
     FlatList,
 } from "react-native";
 import notifee, {
+    EventType,
     TriggerType,
     AuthorizationStatus,
     RepeatFrequency,
@@ -54,6 +55,38 @@ export default function HomeScreen({ navigation }) {
         setEvents(next);
         await save(EVENTS_KEY, next);
     }, []);
+
+    useEffect(() => {
+        // Escuta ações quando o app está ABERTO (Foreground)
+        const unsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
+            if (type === EventType.ACTION_PRESS) {
+                const { pressAction, notification } = detail;
+                const { data } = notification;
+
+                console.log("Foreground Action:", pressAction.id);
+
+                if (pressAction.id === 'take' && data?.medId) {
+                    // Reaproveita sua lógica de marcar como tomado
+                    // Precisamos encontrar o objeto 'med' correto baseado no ID
+                    const med = meds.find(m => m.id === data.medId);
+                    if (med) {
+                        await markTaken(med, data.time);
+                        
+                        // Remove a notificação da barra de status
+                        await notifee.cancelNotification(notification.id);
+                    }
+                } else if (pressAction.id === 'snooze') {
+                    
+                    await notifee.cancelNotification(notification.id);
+                    Alert.alert("Soneca", "Lembrete adiado (lógica de UI aqui)");
+                }
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [meds, markTaken]);
 
     useEffect(() => {
         (async () => {
@@ -214,6 +247,11 @@ export default function HomeScreen({ navigation }) {
                   Verificar Atualizações</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity onPress={() => navigation.navigate('Debug')} style={{ padding: 8 }}>
+                
+                <Text><Icon name="bug" size={24} color="#ef4444" /> Debug</Text>
+            </TouchableOpacity>
+
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
                     <Icon name="plus-circle-outline" size={20} color={styles.primaryText.color} />
@@ -307,7 +345,7 @@ export default function HomeScreen({ navigation }) {
         <FlatList
             data={meds}
             keyExtractor={m => m.id}
-            ListHeaderComponent={renderHeader}
+            ListHeaderComponent={renderHeader()}
             contentContainerStyle={styles.content}
             renderItem={({ item }) => (
                 <View style={styles.medListItem}>

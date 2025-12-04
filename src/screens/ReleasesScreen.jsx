@@ -12,6 +12,7 @@ import {
     PermissionsAndroid
 } from "react-native";
 import DeviceInfo from "react-native-device-info";
+import InstallApk from 'react-native-apk-install';
 import RNFS from 'react-native-fs';
 import { Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Adicionado para ícones
@@ -96,45 +97,18 @@ export default function ReleasesScreen() {
         load();
     }, []);
 
-    const requestStoragePermission = async () => {
-        if (Platform.OS === 'android') {
-            try {
-                // A permissão WRITE_EXTERNAL_STORAGE abrange o acesso de leitura/escrita
-                const granted = await PermissionsAndroid.request(
-                    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-                    {
-                        title: "Permissão de Armazenamento",
-                        message: "Precisamos de acesso ao seu armazenamento para baixar e salvar o arquivo de atualização.",
-                        buttonNeutral: "Perguntar Depois",
-                        buttonNegative: "Cancelar",
-                        buttonPositive: "OK"
-                    }
-                );
-                return granted === PermissionsAndroid.RESULTS.GRANTED;
-            } catch (err) {
-                console.warn(err);
-                return false;
-            }
-        }
-        // No iOS ou Android >= 10, o CachesDirectoryPath geralmente não precisa de permissão explícita.
-        return true; 
-    };
-
-    // Lógica de download aprimorada
     async function handleDownload(item) {
         if (downloadState !== DownloadStates.IDLE) return;
         
-        // 3. Iniciar Download
         setDownloadState(DownloadStates.DOWNLOADING);
         setDownloadProgress(0);
 
         try {
             const url = `${BASE_RELEASE_URL}${item.file}`; 
             
-            // 🎯 CORREÇÃO CRÍTICA DO CAMINHO: Usar DownloadDirectoryPath no Android, que exige a permissão que você solicitou.
             const path = Platform.OS === 'android' 
                 ? `${RNFS.DownloadDirectoryPath}/${item.file}` 
-                : `${RNFS.CachesDirectoryPath}/${item.file}`; // Mantém Caches no iOS
+                : `${RNFS.CachesDirectoryPath}/${item.file}`;
 
             const download = RNFS.downloadFile({
                 fromUrl: url,
@@ -148,18 +122,16 @@ export default function ReleasesScreen() {
             const result = await download.promise;
 
             if (result.statusCode === 200) {
-                // 4. Abrir Instalador
                 setDownloadState(DownloadStates.INSTALLING);
                 
-                // 🎯 CORREÇÃO CRÍTICA DO MÉTODO: Usar RNFS.installApp()
                 if (Platform.OS === 'android') {
-                    await RNFS.installApp(path, 'application/vnd.android.package-archive');
+                    await InstallApk.install(path);
                 } else {
-                    // Fallback para iOS/outros
-                    await Linking.openURL("file://" + path);
+                    await Linking.openURL(`file://${path}`);
                 }
                 
-                // ... (O resto da lógica de estado é mantida)
+                // O app continuará no estado 'INSTALLING' até que o usuário 
+                // complete ou cancele a instalação manualmente.
                 
             } else {
                 setDownloadState(DownloadStates.ERROR);
@@ -169,19 +141,16 @@ export default function ReleasesScreen() {
         } catch (error) {
             console.error("Erro no download ou instalação:", error);
             setDownloadState(DownloadStates.ERROR);
-            Alert.alert("Erro", "Ocorreu um erro ao iniciar o download ou a instalação. Verifique sua conexão e permissões.");
+            Alert.alert("Erro", "Ocorreu um erro ao iniciar a instalação. O arquivo foi baixado, mas não foi possível abrir o instalador.");
         }
     }
     
-    // ----------------------------------------------------
-    // FUNÇÕES DE RENDERIZAÇÃO
-    // ----------------------------------------------------
 
-    const isLatest = installedVersion == latestRelease ? true : false; // && latestRelease ? compareVersions(latestRelease.version, installedVersion) <= 0 : false;
-    console.log("Installed:", installedVersion, "Latest:", latestRelease ? latestRelease.version : "N/A", "isLatest:", isLatest);
+    const isLatest = latestRelease 
+    ? compareVersions(installedVersion, latestRelease.version) >= 0 
+    : true;
     const isDownloading = downloadState !== DownloadStates.IDLE && downloadState !== DownloadStates.ERROR;
     
-    // Mapeamento de texto do progresso
     const getProgressText = () => {
         switch (downloadState) {
             case DownloadStates.CONNECTING: return 'Conectando ao servidor...';
@@ -193,7 +162,6 @@ export default function ReleasesScreen() {
         }
     }; 
     
-    // Componente da Barra de Progresso
     const ProgressBar = () => (
         <View style={styles.progressBarContainer}>
             <Text style={styles.progressText}>{getProgressText()}</Text>
