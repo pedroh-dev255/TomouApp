@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-    View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, FlatList, Keyboard, Modal, ScrollView, Platform
+    View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, FlatList, Keyboard, Modal, ScrollView, Platform, useColorScheme
 } from "react-native";
 import notifee, {
     EventType, TriggerType, AuthorizationStatus, RepeatFrequency, AndroidImportance
@@ -13,6 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 const MEDS_KEY = "@tomou:meds";
 const EVENTS_KEY = "@tomou:events";
 const FOLLOWUPS_KEY = "@tomou:followups";
+const SETTINGS = "@tomou:settings";
 
 const COLORS = ["#4f46e5", "#ef4444", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4", "#6366f1"];
 const ICONS = ["pill", "tablet", "bottle-tonic-plus", "needle", "medical-bag", "water"];
@@ -150,6 +151,7 @@ const PickerInput = ({ value, mode, placeholder, onChange, iconName, label, colo
 export default function HomeScreen({ navigation }) {
     const [meds, setMeds] = useState([]);
     const [events, setEvents] = useState({});
+    const [settings, setSettings] = useState({});
     const [dateOffset, setDateOffset] = useState(0);
     const selectedDate = getTodayStr(dateOffset);
     const [name, setName] = useState("");
@@ -167,6 +169,28 @@ export default function HomeScreen({ navigation }) {
     const [currentMed, setCurrentMed] = useState(null);
     const [pauseUntilDate, setPauseUntilDate] = useState("");
     const [pauseDaysCount, setPauseDaysCount] = useState("");
+    const colorScheme = useColorScheme();
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const s = await AsyncStorage.getItem(SETTINGS);
+                if (s) {
+                    // Ao carregar, o valor 'theme' será um booleano (true para Dark, false para Light)
+                    setSettings(JSON.parse(s));
+                }
+            } catch (error) {
+                console.error("Erro ao carregar configurações:", error);
+            }
+        };
+
+        loadSettings();
+    }, []);
+
+
+    const isDark = settings.theme ?? colorScheme === 'dark';
+
+    const currentStyles = isDark ? stylesDark : styles;
 
 
     const persistMeds = useCallback(async (next) => {
@@ -202,8 +226,10 @@ export default function HomeScreen({ navigation }) {
         (async () => {
             const m = await load(MEDS_KEY) || [];
             const e = await load(EVENTS_KEY) || {};
+            const s = await load(SETTINGS) || {};
             setMeds(m);
             setEvents(e);
+            setSettings(s);
             await notifee.requestPermission();
         })();
     }, []);
@@ -405,16 +431,16 @@ export default function HomeScreen({ navigation }) {
 
     const renderIconColorModal = () => (
         <Modal animationType="slide" transparent={true} visible={iconModalVisible} onRequestClose={() => setIconModalVisible(false)}>
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Personalizar Aparência</Text>
+            <View style={currentStyles.modalOverlay}>
+                <View style={currentStyles.modalContent}>
+                    <Text style={currentStyles.modalTitle}>Personalizar Aparência</Text>
                     
-                    <Text style={styles.label}>Escolha um Ícone:</Text>
-                    <View style={styles.iconGrid}>
+                    <Text style={currentStyles.label}>Escolha um Ícone:</Text>
+                    <View style={currentStyles.iconGrid}>
                         {ICONS.map(ic => (
                             <TouchableOpacity 
                                 key={ic} 
-                                style={[styles.iconSelectBtn, selectedIcon === ic && { borderColor: selectedColor, borderWidth: 2, backgroundColor: '#f0f9ff' }]}
+                                style={[currentStyles.iconSelectBtn, selectedIcon === ic && { borderColor: selectedColor, borderWidth: 2, backgroundColor: '#f0f9ff' }]}
                                 onPress={() => setSelectedIcon(ic)}
                             >
                                 <Icon name={ic} size={32} color={selectedIcon === ic ? selectedColor : "#9ca3af"} />
@@ -422,19 +448,19 @@ export default function HomeScreen({ navigation }) {
                         ))}
                     </View>
 
-                    <Text style={styles.label}>Escolha uma Cor:</Text>
-                    <View style={styles.colorGrid}>
+                    <Text style={currentStyles.label}>Escolha uma Cor:</Text>
+                    <View style={currentStyles.colorGrid}>
                         {COLORS.map(c => (
                             <TouchableOpacity 
                                 key={c} 
-                                style={[styles.colorCircle, { backgroundColor: c }, selectedColor === c && styles.colorSelected]}
+                                style={[currentStyles.colorCircle, { backgroundColor: c }, selectedColor === c && currentStyles.colorSelected]}
                                 onPress={() => setSelectedColor(c)}
                             />
                         ))}
                     </View>
                     
-                    <TouchableOpacity style={[styles.btnAdd, {marginTop: 20, backgroundColor: selectedColor}]} onPress={() => setIconModalVisible(false)}>
-                        <Text style={styles.btnText}>Concluir</Text>
+                    <TouchableOpacity style={[currentStyles.btnAdd, {marginTop: 20, backgroundColor: selectedColor}]} onPress={() => setIconModalVisible(false)}>
+                        <Text style={currentStyles.btnText}>Concluir</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -443,27 +469,27 @@ export default function HomeScreen({ navigation }) {
     
     const renderAddMedModal = () => (
         <Modal animationType="slide" transparent={false} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-            <ScrollView style={{flex:1, backgroundColor:'#f3f4f6'}} contentContainerStyle={styles.containerPadding}>
-                <View style={styles.headerRow}>
+            <ScrollView style={{flex:1, backgroundColor:'#f3f4f6'}} contentContainerStyle={currentStyles.containerPadding}>
+                <View style={currentStyles.headerRow}>
                     <TouchableOpacity onPress={() => {setModalVisible(false); resetModalStates();}}>
                         <Icon name="close" size={28} color="#374151" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Cadastrar Novo Medicamento</Text>
+                    <Text style={currentStyles.headerTitle}>Cadastrar Novo Medicamento</Text>
                     <View style={{width: 28}}/>
                 </View>
                 
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Dados Principais</Text>
+                <View style={currentStyles.card}>
+                    <Text style={currentStyles.cardTitle}>Dados Principais</Text>
                     <View style={{flexDirection:'row', alignItems:'center', gap: 10, marginBottom: 10}}>
                         <TouchableOpacity 
-                            style={[styles.iconPreview, { backgroundColor: selectedColor + '20', borderColor: selectedColor }]} 
+                            style={[currentStyles.iconPreview, { backgroundColor: selectedColor + '20', borderColor: selectedColor }]} 
                             onPress={() => setIconModalVisible(true)}
                         >
                             <Icon name={selectedIcon} size={28} color={selectedColor} />
-                            <View style={styles.editBadge}><Icon name="pencil" size={10} color="#fff"/></View>
+                            <View style={currentStyles.editBadge}><Icon name="pencil" size={10} color="#fff"/></View>
                         </TouchableOpacity>
                         <TextInput 
-                            style={[styles.input, {flex:1, marginBottom:0}]} 
+                            style={[currentStyles.input, {flex:1, marginBottom:0}]} 
                             placeholder="Nome (ex: Dipirona)" 
                             value={name} 
                             onChangeText={setName} 
@@ -494,14 +520,14 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 
                 {/* Horários */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Horários de Tomada</Text>
-                    <View style={styles.tabsContainer}>
+                <View style={currentStyles.card}>
+                    <Text style={currentStyles.cardTitle}>Horários de Tomada</Text>
+                    <View style={currentStyles.tabsContainer}>
                         <View style={{flexDirection:'row', gap: 10}}>
                             <View style={{flex: 1}}>
-                                <Text style={styles.label}>Horários Fixos (HH:MM, HH:MM...)</Text>
+                                <Text style={currentStyles.label}>Horários Fixos (HH:MM, HH:MM...)</Text>
                                 <TextInput 
-                                    style={styles.input} 
+                                    style={currentStyles.input} 
                                     placeholder="08:00, 20:00" 
                                     value={timesCsv} 
                                     onChangeText={(t) => { setTimesCsv(t); setIntervalHours(""); }} 
@@ -511,9 +537,9 @@ export default function HomeScreen({ navigation }) {
                                 <Text style={{fontWeight:'bold', color:'#ccc'}}>OU</Text>
                             </View>
                             <View style={{flex: 1}}>
-                                <Text style={styles.label}>Intervalo (Horas)</Text>
+                                <Text style={currentStyles.label}>Intervalo (Horas)</Text>
                                 <TextInput 
-                                    style={styles.input} 
+                                    style={currentStyles.input} 
                                     placeholder="Ex: 8" 
                                     keyboardType="numeric"
                                     value={intervalHours} 
@@ -541,8 +567,8 @@ export default function HomeScreen({ navigation }) {
                     </View>
                 </View>
 
-                <TouchableOpacity style={[styles.btnAdd, { backgroundColor: selectedColor, marginBottom: 50 }]} onPress={addMed}>
-                    <Text style={styles.btnText}>Salendar e Agendar</Text>
+                <TouchableOpacity style={[currentStyles.btnAdd, { backgroundColor: selectedColor, marginBottom: 50 }]} onPress={addMed}>
+                    <Text style={currentStyles.btnText}>Salendar e Agendar</Text>
                 </TouchableOpacity>
             </ScrollView>
         </Modal>
@@ -589,28 +615,28 @@ export default function HomeScreen({ navigation }) {
 
         return (
             <Modal animationType="slide" transparent={false} visible={manageModalVisible} onRequestClose={() => setManageModalVisible(false)}>
-                <ScrollView style={{flex:1, backgroundColor:'#f3f4f6'}} contentContainerStyle={styles.containerPadding}>
-                    <View style={styles.headerRow}>
+                <ScrollView style={{flex:1, backgroundColor:'#f3f4f6'}} contentContainerStyle={currentStyles.containerPadding}>
+                    <View style={currentStyles.headerRow}>
                         <TouchableOpacity onPress={() => setManageModalVisible(false)}>
                             <Icon name="close" size={28} color="#374151" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Gerenciar: {currentMed.name}</Text>
+                        <Text style={currentStyles.headerTitle}>Gerenciar: {currentMed.name}</Text>
                         <View style={{width: 28}}/>
                     </View>
                     
                     {/* Informações Atuais */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Status e Detalhes</Text>
+                    <View style={currentStyles.card}>
+                        <Text style={currentStyles.cardTitle}>Status e Detalhes</Text>
                         <View style={{flexDirection:'row', alignItems:'center', gap: 10, marginBottom: 10}}>
-                             <View style={[styles.miniIcon, { backgroundColor: currentMed.color + '20' }]}>
+                             <View style={[currentStyles.miniIcon, { backgroundColor: currentMed.color + '20' }]}>
                                 <Icon name={currentMed.icon} size={24} color={currentMed.color} />
                             </View>
                             <View>
                                 <Text style={{fontWeight:'bold', fontSize: 16}}>{currentMed.name}</Text>
-                                <Text style={styles.medDetails}>Início: {currentMed.startDate.split('-').reverse().join('/')}</Text>
-                                {currentMed.pauseDays > 0 && <Text style={styles.medDetails}>Ciclo: 1 dia de uso / {currentMed.pauseDays} dias de pausa</Text>}
+                                <Text style={currentStyles.medDetails}>Início: {currentMed.startDate.split('-').reverse().join('/')}</Text>
+                                {currentMed.pauseDays > 0 && <Text style={currentStyles.medDetails}>Ciclo: 1 dia de uso / {currentMed.pauseDays} dias de pausa</Text>}
                                 {currentMed.endDate && (
-                                     <Text style={[styles.medDetails, { color: isPaused ? '#ef4444' : '#6b7280', fontWeight: isPaused ? 'bold' : 'normal' }]}>
+                                     <Text style={[currentStyles.medDetails, { color: isPaused ? '#ef4444' : '#6b7280', fontWeight: isPaused ? 'bold' : 'normal' }]}>
                                          {isPaused ? 'PAUSADO ATÉ: ' : 'TÉRMINO: '} {currentMed.endDate.split('-').reverse().join('/')}
                                      </Text>
                                 )}
@@ -618,8 +644,8 @@ export default function HomeScreen({ navigation }) {
                         </View>
                         
                         {isPaused && (
-                            <TouchableOpacity style={[styles.btnAdd, {backgroundColor: '#10b981', marginTop: 15}]} onPress={handleUnpause}>
-                                <Text style={styles.btnText}>▶️ Retomar o Agendamento</Text>
+                            <TouchableOpacity style={[currentStyles.btnAdd, {backgroundColor: '#10b981', marginTop: 15}]} onPress={handleUnpause}>
+                                <Text style={currentStyles.btnText}>▶️ Retomar o Agendamento</Text>
                             </TouchableOpacity>
                         )}
                         
@@ -627,10 +653,10 @@ export default function HomeScreen({ navigation }) {
                     
                     {/* Seção de Pausa Manual */}
                     {!isPaused && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Pausar o Tratamento (Manual)</Text>
+                    <View style={currentStyles.card}>
+                        <Text style={currentStyles.cardTitle}>Pausar o Tratamento (Manual)</Text>
                         
-                        <Text style={styles.label}>Pausar até uma Data Específica:</Text>
+                        <Text style={currentStyles.label}>Pausar até uma Data Específica:</Text>
                         <View style={{flexDirection:'row', gap: 10, alignItems: 'center'}}>
                             <View style={{flex:1}}>
                                 <PickerInput 
@@ -643,7 +669,7 @@ export default function HomeScreen({ navigation }) {
                                 />
                             </View>
                             <TouchableOpacity 
-                                style={[styles.actionBtn, {backgroundColor: '#f59e0b'}]} 
+                                style={[currentStyles.actionBtn, {backgroundColor: '#f59e0b'}]} 
                                 onPress={() => pauseMedicationWithDate(pauseUntilDate)}
                                 disabled={!pauseUntilDate}
                             >
@@ -653,11 +679,11 @@ export default function HomeScreen({ navigation }) {
                         
                         <View style={{height: 1, backgroundColor: '#eee', marginVertical: 15}}/>
                         
-                        <Text style={styles.label}>Pausar por um Número de Dias:</Text>
+                        <Text style={currentStyles.label}>Pausar por um Número de Dias:</Text>
                         <View style={{flexDirection:'row', gap: 10, alignItems: 'center'}}>
                              <View style={{flex:1}}>
                                 <TextInput 
-                                    style={styles.input} 
+                                    style={currentStyles.input} 
                                     placeholder="Ex: 5 dias" 
                                     keyboardType="numeric"
                                     value={pauseDaysCount} 
@@ -665,7 +691,7 @@ export default function HomeScreen({ navigation }) {
                                 />
                             </View>
                             <TouchableOpacity 
-                                style={[styles.actionBtn, {backgroundColor: '#f59e0b'}]} 
+                                style={[currentStyles.actionBtn, {backgroundColor: '#f59e0b'}]} 
                                 onPress={handlePauseForDays}
                                 disabled={!pauseDaysCount}
                             >
@@ -681,11 +707,11 @@ export default function HomeScreen({ navigation }) {
 
                     {/* Botão de Deletar */}
                     <TouchableOpacity 
-                        style={[styles.btnAdd, { backgroundColor: '#ef4444', marginTop: 20, marginBottom: 50 }]} 
+                        style={[currentStyles.btnAdd, { backgroundColor: '#ef4444', marginTop: 20, marginBottom: 50 }]} 
                         onPress={() => deleteMed(currentMed)}
                     >
                         <Icon name="trash-can-outline" size={20} color="#fff" style={{marginRight: 10}}/>
-                        <Text style={styles.btnText}>Excluir Medicamento</Text>
+                        <Text style={currentStyles.btnText}>Excluir Medicamento</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </Modal>
@@ -693,31 +719,28 @@ export default function HomeScreen({ navigation }) {
     };
 
     const renderHeader = () => (
-        <View style={styles.containerPadding}>
+        <View style={currentStyles.containerPadding}>
             {/* Header com Ícone de Adição */}
-            <View style={styles.headerRow}>
+            <View style={currentStyles.headerRow}>
                 <View style={{flexDirection:'row', gap:15}}>
-                    <TouchableOpacity onPress={() => navigation.navigate('Releases')}>
-                    <Icon name="update" size={24} color="#00ac33ff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('Debug')}>
-                    <Icon name="bug" size={24} color="#e41b14ff" />
+                    <TouchableOpacity onPress={() => navigation.navigate('Configs')}>
+                        <Icon name="cog" size={24} color="#747474ff" />
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.headerTitle}>Tomou? 💊</Text>
-                <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addIconBtn}>
+                <Text style={currentStyles.headerTitle}>Tomou? 💊</Text>
+                <TouchableOpacity onPress={() => setModalVisible(true)} style={currentStyles.addIconBtn}>
                     <Icon name="plus" size={28} color="#fff" />
                 </TouchableOpacity>
             </View>
 
             {/* Barra de Data */}
-            <View style={styles.dateNav}>
+            <View style={currentStyles.dateNav}>
                 <TouchableOpacity onPress={() => setDateOffset(d => (Number(d) || 0) - 1)}>
                     <Icon name="chevron-left" size={30} color="#4f46e5" />
                 </TouchableOpacity>
                 <View style={{alignItems:'center'}}>
-                    <Text style={styles.dateLabel}>
+                    <Text style={currentStyles.dateLabel}>
                         {dateOffset === 0 ? "HOJE" : dateOffset === -1 ? "ONTEM" : dateOffset === 1 ? "AMANHÃ" : selectedDate.split('-').reverse().slice(0,2).join('/')}
                     </Text>
                     <Text style={{fontSize:12, color:'#999'}}>{selectedDate.split('-').reverse().join('/')}</Text>
@@ -728,8 +751,8 @@ export default function HomeScreen({ navigation }) {
             </View>
 
             {/* LISTA DO DIA */}
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Doses de {dateOffset === 0 ? "Hoje" : selectedDate.split('-').reverse().join('/')}</Text>
+            <View style={currentStyles.card}>
+                <Text style={currentStyles.cardTitle}>Doses de {dateOffset === 0 ? "Hoje" : selectedDate.split('-').reverse().join('/')}</Text>
                 {medsForDate.length === 0 && <Text style={{color:'#999', fontStyle:'italic'}}>Nenhum remédio para tomar neste dia.</Text>}
                 
                 {meds.map(m => {
@@ -739,11 +762,11 @@ export default function HomeScreen({ navigation }) {
 
                     if (isRelevant && new Date(selectedDate) >= new Date(m.startDate) && m.pauseDays > 0) {
                          return (
-                            <View key={m.id} style={[styles.dailyMedItem, {backgroundColor: '#fef3c7', paddingHorizontal: 10, borderRadius: 8, marginBottom: 8}]}>
+                            <View key={m.id} style={[currentStyles.dailyMedItem, {backgroundColor: '#fef3c7', paddingHorizontal: 10, borderRadius: 8, marginBottom: 8}]}>
                                 <Icon name="sleep" size={24} color="#d97706" style={{marginRight: 10}}/>
                                 <View style={{flex:1}}>
-                                    <Text style={styles.medName}>{m.name}</Text>
-                                    <Text style={[styles.medDetails, {color: '#d97706', fontWeight: 'bold'}]}>DIA DE PAUSA POR CICLO ({m.pauseDays} dias)</Text>
+                                    <Text style={currentStyles.medName}>{m.name}</Text>
+                                    <Text style={[currentStyles.medDetails, {color: '#d97706', fontWeight: 'bold'}]}>DIA DE PAUSA POR CICLO ({m.pauseDays} dias)</Text>
                                 </View>
                             </View>
                          );
@@ -751,11 +774,11 @@ export default function HomeScreen({ navigation }) {
                     
                     if (isRelevant && m.endDate && new Date(selectedDate) <= new Date(m.endDate + 'T23:59:59')) {
                          return (
-                            <View key={m.id} style={[styles.dailyMedItem, {backgroundColor: '#fee2e2', paddingHorizontal: 10, borderRadius: 8, marginBottom: 8}]}>
+                            <View key={m.id} style={[currentStyles.dailyMedItem, {backgroundColor: '#fee2e2', paddingHorizontal: 10, borderRadius: 8, marginBottom: 8}]}>
                                 <Icon name="stop-circle-outline" size={24} color="#ef4444" style={{marginRight: 10}}/>
                                 <View style={{flex:1}}>
-                                    <Text style={styles.medName}>{m.name}</Text>
-                                    <Text style={[styles.medDetails, {color: '#ef4444', fontWeight: 'bold'}]}>PAUSA MANUAL ATÉ {m.endDate.split('-').reverse().join('/')}</Text>
+                                    <Text style={currentStyles.medName}>{m.name}</Text>
+                                    <Text style={[currentStyles.medDetails, {color: '#ef4444', fontWeight: 'bold'}]}>PAUSA MANUAL ATÉ {m.endDate.split('-').reverse().join('/')}</Text>
                                 </View>
                             </View>
                          );
@@ -764,14 +787,14 @@ export default function HomeScreen({ navigation }) {
                     if (shouldTakeMedOnDate(m, selectedDate)) {
                         const isToday = selectedDate === getTodayStr();
                         return (
-                            <View key={m.id} style={styles.dailyMedItem}>
-                                <View style={[styles.miniIcon, { backgroundColor: (m.color || '#4f46e5') + '20' }]}>
+                            <View key={m.id} style={currentStyles.dailyMedItem}>
+                                <View style={[currentStyles.miniIcon, { backgroundColor: (m.color || '#4f46e5') + '20' }]}>
                                     <Icon name={m.icon || 'pill'} size={24} color={m.color || '#4f46e5'} />
                                 </View>
 
                                 <View style={{flex:1, paddingHorizontal: 10}}>
-                                    <Text style={styles.medName}>{m.name}</Text>
-                                    <Text style={styles.medDetails}>
+                                    <Text style={currentStyles.medName}>{m.name}</Text>
+                                    <Text style={currentStyles.medDetails}>
                                         {m.times.length} doses 
                                         {m.endDate && ` • Até ${m.endDate.split('-').reverse().join('/')}`}
                                         {m.pauseDays > 0 && ` • Ciclo Pausa: ${m.pauseDays}d`}
@@ -785,14 +808,14 @@ export default function HomeScreen({ navigation }) {
                                             <TouchableOpacity 
                                                 key={t} 
                                                 style={[
-                                                    styles.chipBtn, 
+                                                    currentStyles.chipBtn, 
                                                     { borderColor: m.color || '#4f46e5' },
                                                     taken && { backgroundColor: m.color || '#4f46e5', borderColor: m.color || '#4f46e5' }
                                                 ]} 
                                                 onPress={() => isToday && !taken && markTaken(m, t)}
                                                 activeOpacity={taken ? 1 : (isToday ? 0.7 : 1)}
                                             >
-                                                <Text style={[styles.chipText, { color: taken ? '#fff' : (m.color || '#4f46e5') }]}>
+                                                <Text style={[currentStyles.chipText, { color: taken ? '#fff' : (m.color || '#4f46e5') }]}>
                                                     {t}
                                                 </Text>
                                                 {taken && <Icon name="check" size={10} color="#fff" style={{marginLeft:2}}/>}
@@ -807,24 +830,24 @@ export default function HomeScreen({ navigation }) {
                 })}
             </View>
             
-            <Text style={[styles.cardTitle, {marginTop: 10}]}>Gerenciar Agendamentos</Text>
+            <Text style={[currentStyles.cardTitle, {marginTop: 10}]}>Gerenciar Agendamentos</Text>
             {meds.length === 0 && <Text style={{color:'#999', fontStyle:'italic', paddingHorizontal: 16}}>Nenhum medicamento cadastrado.</Text>}
         </View>
     );
 
     const renderMedList = ({item}) => (
-        <TouchableOpacity style={styles.medListItemTouchable} onPress={() => openManageModal(item)}>
+        <TouchableOpacity style={currentStyles.medListItemTouchable} onPress={() => openManageModal(item)}>
             <View style={{flexDirection:'row', alignItems:'center', flex: 1}}>
                 <Icon name={item.icon || 'pill'} size={24} color={item.color || '#666'} style={{marginRight:10}}/>
                 <View>
                     <Text style={{fontWeight:'600', fontSize: 16, color:'#1f2937'}}>{item.name}</Text>
                     <View style={{flexDirection:'row', flexWrap: 'wrap', marginTop: 4}}>
-                         <Text style={styles.medManagementDetails}>Doses: {item.times.length}</Text>
-                         <Text style={styles.medManagementDetails}>• Início: {item.startDate.split('-').reverse().join('/')}</Text>
-                         {item.endDate && <Text style={[styles.medManagementDetails, {color: new Date(item.endDate) >= new Date(getTodayStr()) ? '#ef4444' : '#9ca3af'}]}>
+                         <Text style={currentStyles.medManagementDetails}>Doses: {item.times.length}</Text>
+                         <Text style={currentStyles.medManagementDetails}>• Início: {item.startDate.split('-').reverse().join('/')}</Text>
+                         {item.endDate && <Text style={[currentStyles.medManagementDetails, {color: new Date(item.endDate) >= new Date(getTodayStr()) ? '#ef4444' : '#9ca3af'}]}>
                              • Fim/Pausa: {item.endDate.split('-').reverse().join('/')}
                          </Text>}
-                         {item.pauseDays > 0 && <Text style={styles.medManagementDetails}>• Ciclo: {item.pauseDays}d</Text>}
+                         {item.pauseDays > 0 && <Text style={currentStyles.medManagementDetails}>• Ciclo: {item.pauseDays}d</Text>}
                     </View>
                 </View>
             </View>
@@ -911,4 +934,86 @@ const styles = StyleSheet.create({
     colorCircle: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: '#fff', shadowColor: '#000', shadowOpacity: 0.1, elevation: 2 },
     colorSelected: { borderWidth: 3, borderColor: '#333' },
     actionBtn: { padding: 10, borderRadius: 10, justifyContent: 'center', alignItems: 'center', height: 48, width: 48 },
+});
+
+
+
+const DARK_BG = '#121212';
+const CARD_BG = '#1E1E1E';
+const INPUT_BG = '#292929';
+const BORDER_COLOR = '#333333';
+const TEXT_COLOR_LIGHT = '#F0F0F0';
+const TEXT_COLOR_MEDIUM = '#A0A0A0';
+const TEXT_COLOR_DARK = '#D0D0D0';
+const PRIMARY_COLOR_LIGHT = '#8A85FF';
+
+const stylesDark = StyleSheet.create({
+    ...styles, // Herda todas as propriedades para evitar repetição
+    
+    // Fundo da Tela
+    containerPadding: { ...styles.containerPadding, backgroundColor: DARK_BG },
+
+    // Títulos de Cabeçalho e Texto Principal
+    headerTitle: { ...styles.headerTitle, color: TEXT_COLOR_LIGHT },
+    
+    // Navegação de Data
+    dateNav: { 
+        ...styles.dateNav, 
+        backgroundColor: CARD_BG, 
+        borderColor: BORDER_COLOR, 
+        borderWidth: 1, 
+        elevation: 0, // Desliga a sombra padrão do claro
+        shadowOpacity: 0.2, // Mantém uma sombra mais sutil
+        shadowColor: '#000'
+    },
+    dateLabel: { ...styles.dateLabel, color: PRIMARY_COLOR_LIGHT },
+
+    // Cartões (Forms/Listas)
+    card: { 
+        ...styles.card, 
+        backgroundColor: CARD_BG, 
+        shadowColor: "#000", 
+        shadowOpacity: 0.2, 
+        elevation: 5,
+    },
+    cardTitle: { ...styles.cardTitle, color: TEXT_COLOR_DARK },
+    
+    // Labels e Textos Secundários
+    label: { ...styles.label, color: TEXT_COLOR_MEDIUM },
+    medDetails: { ...styles.medDetails, color: TEXT_COLOR_MEDIUM },
+    medManagementDetails: { ...styles.medManagementDetails, color: '#6b7280' }, // Cinza claro já funciona bem
+    
+    // Campos de Input e Picker
+    input: { 
+        ...styles.input, 
+        backgroundColor: INPUT_BG, 
+        borderColor: BORDER_COLOR, 
+        color: TEXT_COLOR_LIGHT 
+    },
+    pickerContainer: {
+        ...styles.pickerContainer,
+        backgroundColor: INPUT_BG, 
+        borderColor: BORDER_COLOR, 
+    },
+    pickerText: {
+        ...styles.pickerText,
+        color: TEXT_COLOR_LIGHT,
+    },
+    
+    // Itens de Lista
+    dailyMedItem: { ...styles.dailyMedItem, borderColor: BORDER_COLOR },
+    medName: { ...styles.medName, color: TEXT_COLOR_LIGHT },
+    medListItemTouchable: { 
+        ...styles.medListItemTouchable, 
+        backgroundColor: CARD_BG, // Reutiliza o fundo do cartão para a lista
+        borderColor: BORDER_COLOR 
+    },
+    
+    // Modal
+    modalOverlay: { ...styles.modalOverlay, backgroundColor: 'rgba(0,0,0,0.7)' },
+    modalContent: { ...styles.modalContent, backgroundColor: CARD_BG },
+    modalTitle: { ...styles.modalTitle, color: TEXT_COLOR_LIGHT },
+    iconSelectBtn: { ...styles.iconSelectBtn, borderColor: BORDER_COLOR },
+    colorCircle: { ...styles.colorCircle, borderColor: CARD_BG }, // Borda interna do círculo deve ser o fundo
+    colorSelected: { ...styles.colorSelected, borderColor: TEXT_COLOR_LIGHT }, // Borda de seleção mais visível
 });

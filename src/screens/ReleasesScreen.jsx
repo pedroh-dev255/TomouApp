@@ -9,13 +9,17 @@ import {
     ScrollView,
     Alert,
     Platform,
+    useColorScheme,
     PermissionsAndroid
 } from "react-native";
 import DeviceInfo from "react-native-device-info";
 import InstallApk from 'react-native-apk-install';
 import RNFS from 'react-native-fs';
 import { Linking } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Adicionado para ícones
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const SETTINGS = "@tomou:settings";
 
 const BASE_RELEASE_URL = "https://tomou.phsolucoes.space/releases/";
 const REPO_URL = `${BASE_RELEASE_URL}index.json`;
@@ -38,7 +42,31 @@ export default function ReleasesScreen() {
     
     // Novo estado de progresso detalhado
     const [downloadState, setDownloadState] = useState(DownloadStates.IDLE);
-    const [downloadProgress, setDownloadProgress] = useState(0); // 0 a 100
+    const [downloadProgress, setDownloadProgress] = useState(0);
+
+    const colorScheme = useColorScheme();
+    const [settings, setSettings] = useState({});
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const s = await AsyncStorage.getItem(SETTINGS);
+                if (s) {
+                    // Ao carregar, o valor 'theme' será um booleano (true para Dark, false para Light)
+                    setSettings(JSON.parse(s));
+                }
+            } catch (error) {
+                console.error("Erro ao carregar configurações:", error);
+            }
+        };
+
+        loadSettings();
+    }, []);
+
+
+    const isDark = settings.theme ?? colorScheme === 'dark';
+
+    const currentStyles = isDark ? stylesDark : styles;
 
     // Função para comparar versões 1.2.10 > 1.2.9
     function compareVersions(v1, v2) {
@@ -163,11 +191,11 @@ export default function ReleasesScreen() {
     }; 
     
     const ProgressBar = () => (
-        <View style={styles.progressBarContainer}>
-            <Text style={styles.progressText}>{getProgressText()}</Text>
+        <View style={currentStyles.progressBarContainer}>
+            <Text style={currentStyles.progressText}>{getProgressText()}</Text>
             {downloadState === DownloadStates.DOWNLOADING && (
-                <View style={styles.progressBarBackground}>
-                    <View style={[styles.progressBarFill, { width: `${downloadProgress}%` }]} />
+                <View style={currentStyles.progressBarBackground}>
+                    <View style={[currentStyles.progressBarFill, { width: `${downloadProgress}%` }]} />
                 </View>
             )}
             {(downloadState === DownloadStates.CONNECTING || downloadState === DownloadStates.CHECKING_PERMISSION) && (
@@ -179,7 +207,7 @@ export default function ReleasesScreen() {
 
     if (loading) {
         return (
-            <View style={styles.center}>
+            <View style={currentStyles.center}>
                 <ActivityIndicator size="large" color="#007AFF" />
                 <Text style={{ marginTop: 10 }}>Carregando versões...</Text>
             </View>
@@ -187,86 +215,89 @@ export default function ReleasesScreen() {
     }
     
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>Atualizações do Tomou? 📲</Text>
-
-            {/* Caixa de Status da Versão Instalada */}
-            <View style={styles.installedBox}>
-                <View style={styles.versionStatus}>
-                    <Icon 
-                        name={isLatest ? "check-circle" : "alert-circle"} 
-                        size={24} 
-                        color={isLatest ? "#10b981" : "#ef4444"} 
-                        style={{ marginRight: 10 }}
-                    />
-                    <View>
-                        <Text style={styles.installedTitle}>Versão Instalada:</Text>
-                        <Text style={styles.installedVersion}>{installedVersion}</Text>
-                    </View>
-                </View>
-                
-                {isLatest ? (
-                    <Text style={styles.isLatestMessage}>Parabéns! Você está usando a última versão disponível.</Text>
-                ) : (
-                    <Text style={styles.updateAvailableMessage}>Existe uma atualização importante disponível.</Text>
-                )}
+        <View style={isDark ? {flex:1, backgroundColor:'#474747ff', paddingBottom: 30} : {flex:1, backgroundColor:'#ffffff', paddingBottom: 30}}>
+            <View style={currentStyles.header}>
+                <Text style={currentStyles.headerTitle}>Atualizações do Tomou? 📲</Text>
             </View>
-
-            {/* Barra de Progresso */}
-            {(downloadState !== DownloadStates.IDLE || isDownloading || downloadState === DownloadStates.ERROR) && (
-                <ProgressBar />
-            )}
-            
-            {/* Release mais recente em destaque (Apenas se não for a última versão) */}
-            {latestRelease && !isLatest && (
-                <View style={styles.featured}>
-                    <Text style={styles.featuredLabel}>Última Versão: {latestRelease.version}</Text>
-                    <Text style={styles.notes}>{latestRelease.notes}</Text>
-
-                    {/* Botão de atualização SÓ aparece se houver atualização e não estiver baixando */}
-                    {(!isLatest && !isDownloading) && (
-                        <TouchableOpacity
-                            style={styles.btnUpdate}
-                            onPress={() => handleDownload(latestRelease)}
-                        >
-                            <Icon name="download-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
-                            <Text style={styles.btnUpdateText}>Baixar Atualização</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            )}
-
-            <Text style={styles.subtitle}>Histórico Completo de Versões</Text>
-
-            {/* Histórico de versões */}
-            {releases.map((item, index) => (
-                <View key={index} style={styles.item}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.itemVersion}>{item.version}</Text>
-                        <Text style={styles.itemDate}>{item.launch_date}</Text>
-                        <Text style={styles.notes}>{item.notes}</Text>
+            <ScrollView style={currentStyles.container}>
+                {/* Caixa de Status da Versão Instalada */}
+                <View style={currentStyles.installedBox}>
+                    <View style={currentStyles.versionStatus}>
+                        <Icon 
+                            name={isLatest ? "check-circle" : "alert-circle"} 
+                            size={24} 
+                            color={isLatest ? "#10b981" : "#ef4444"} 
+                            style={{ marginRight: 10 }}
+                        />
+                        <View>
+                            <Text style={currentStyles.installedTitle}>Versão Instalada:</Text>
+                            <Text style={currentStyles.installedVersion}>{installedVersion}</Text>
+                        </View>
                     </View>
-
-                    {/* Botão Baixar sempre visível no histórico para versões mais novas */}
-                    {installedVersion != item.version && (
-                        <TouchableOpacity
-                            style={[styles.btnSmall, isDownloading && styles.btnSmallDisabled]}
-                            onPress={() => handleDownload(item)}
-                            disabled={isDownloading}
-                        >
-                            <Text style={styles.btnSmallText}>{isDownloading ? 'Baixando...' : 'Baixar'}</Text>
-                        </TouchableOpacity>
-                    )}
-                    {/* Tag 'Instalado' para a versão atual ou anteriores */}
-                    {installedVersion == item.version && (
-                         <View style={styles.downloadedTag}>
-                            <Icon name="check" size={16} color="#10b981" />
-                            <Text style={styles.downloadedTagText}>Instalado</Text>
-                         </View>
+                    
+                    {isLatest ? (
+                        <Text style={currentStyles.isLatestMessage}>Parabéns! Você está usando a última versão disponível.</Text>
+                    ) : (
+                        <Text style={currentStyles.updateAvailableMessage}>Existe uma atualização importante disponível.</Text>
                     )}
                 </View>
-            ))}
-        </ScrollView>
+
+                {/* Barra de Progresso */}
+                {(downloadState !== DownloadStates.IDLE || isDownloading || downloadState === DownloadStates.ERROR) && (
+                    <ProgressBar />
+                )}
+                
+                {/* Release mais recente em destaque (Apenas se não for a última versão) */}
+                {latestRelease && !isLatest && (
+                    <View style={currentStyles.featured}>
+                        <Text style={currentStyles.featuredLabel}>Última Versão: {latestRelease.version}</Text>
+                        <Text style={currentStyles.notes}>{latestRelease.notes}</Text>
+
+                        {/* Botão de atualização SÓ aparece se houver atualização e não estiver baixando */}
+                        {(!isLatest && !isDownloading) && (
+                            <TouchableOpacity
+                                style={currentStyles.btnUpdate}
+                                onPress={() => handleDownload(latestRelease)}
+                            >
+                                <Icon name="download-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                <Text style={currentStyles.btnUpdateText}>Baixar Atualização</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
+
+                <Text style={currentStyles.subtitle}>Histórico Completo de Versões</Text>
+
+                {/* Histórico de versões */}
+                {releases.map((item, index) => (
+                    <View key={index} style={currentStyles.item}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={currentStyles.itemVersion}>{item.version}</Text>
+                            <Text style={currentStyles.itemDate}>{item.launch_date}</Text>
+                            <Text style={currentStyles.notes}>{item.notes}</Text>
+                        </View>
+
+                        {/* Botão Baixar sempre visível no histórico para versões mais novas */}
+                        {installedVersion != item.version && (
+                            <TouchableOpacity
+                                style={[currentStyles.btnSmall, isDownloading && currentStyles.btnSmallDisabled]}
+                                onPress={() => handleDownload(item)}
+                                disabled={isDownloading}
+                            >
+                                <Text style={currentStyles.btnSmallText}>{isDownloading ? 'Baixando...' : 'Baixar'}</Text>
+                            </TouchableOpacity>
+                        )}
+                        {/* Tag 'Instalado' para a versão atual ou anteriores */}
+                        {installedVersion == item.version && (
+                            <View style={currentStyles.downloadedTag}>
+                                <Icon name="check" size={16} color="#10b981" />
+                                <Text style={currentStyles.downloadedTagText}>Instalado</Text>
+                            </View>
+                        )}
+                    </View>
+                ))}
+            </ScrollView>
+        </View>
     );
 }
 
@@ -275,7 +306,18 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
         backgroundColor: "#F7F7F7",
+        
     },
+    header: { 
+        padding: 16, 
+        backgroundColor: '#fff', 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderColor: '#ddd'
+    },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
     center: {
         flex: 1,
         alignItems: "center",
@@ -443,5 +485,124 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         fontSize: 12,
         marginLeft: 4,
+    }
+});
+
+const stylesDark = StyleSheet.create({
+    ...styles, // Herda todos os estilos base, mas sobrescreve as cores
+    container: {
+        ...styles.container,
+        backgroundColor: "#2e2e2eff", // Fundo Escuro
+    },
+    header: { 
+        ...styles.header,
+        backgroundColor: '#383838ff', 
+        borderColor: '#333',
+    },
+
+    headerTitle: { ...styles.headerTitle, color: '#FFFFFF' },
+    center: {
+        ...styles.center,
+        backgroundColor: "#313131ff",
+    },
+    title: {
+        ...styles.title,
+        color: "#FFFFFF", // Texto Branco
+    },
+    loadingText: {
+        color: "#FFFFFF",
+    },
+    
+    // --- Estilos de Status de Versão (Dark)
+    installedBox: {
+        ...styles.installedBox,
+        backgroundColor: "#444444ff", // Fundo Escuro para a caixa
+        shadowColor: "#313131ff",
+        shadowOpacity: 0.5,
+    },
+    installedTitle: {
+        ...styles.installedTitle,
+        color: "#b0b0b0", // Texto Cinza Claro
+    },
+    installedVersion: {
+        ...styles.installedVersion,
+        color: "#FFFFFF", // Texto Branco
+    },
+    
+    // --- Estilos da Barra de Progresso (Dark)
+    progressBarContainer: {
+        ...styles.progressBarContainer,
+        backgroundColor: '#292929ff', // Fundo Escuro para a barra
+        borderLeftColor: "#90C0FF", // Azul Mais Claro
+    },
+    progressText: {
+        ...styles.progressText,
+        color: "#FFFFFF", // Texto Branco
+    },
+    progressBarBackground: {
+        ...styles.progressBarBackground,
+        backgroundColor: '#333333',
+    },
+    progressBarFill: {
+        ...styles.progressBarFill,
+        backgroundColor: '#90C0FF', // Azul Mais Claro
+    },
+
+    // --- Estilos de Release em Destaque (Dark)
+    featured: {
+        ...styles.featured,
+        backgroundColor: "#29293a", // Fundo Azul Escuro
+        borderColor: "#4a4a6b",
+    },
+    featuredLabel: {
+        ...styles.featuredLabel,
+        color: "#90C0FF", // Azul Claro
+    },
+    notes: {
+        ...styles.notes,
+        color: "#CCCCCC", // Texto Claro
+    },
+    btnUpdate: {
+        ...styles.btnUpdate,
+        backgroundColor: "#90C0FF", // Botão Azul Claro
+    },
+    btnUpdateText: {
+        ...styles.btnUpdateText,
+        color: "#1e1e1e", // Texto Escuro no botão claro
+    },
+    
+    // --- Estilos do Histórico (Dark)
+    subtitle: {
+        ...styles.subtitle,
+        color: "#FFFFFF", // Texto Branco
+    },
+    item: {
+        ...styles.item,
+        backgroundColor: "#383838ff", // Fundo Escuro
+        borderColor: '#333333',
+    },
+    itemVersion: {
+        ...styles.itemVersion,
+        color: "#FFFFFF", // Texto Branco
+    },
+    itemDate: {
+        ...styles.itemDate,
+        color: "#b0b0b0", // Texto Cinza Claro
+    },
+    btnSmall: {
+        ...styles.btnSmall,
+        backgroundColor: "#90C0FF",
+    },
+    btnSmallText: {
+        ...styles.btnSmallText,
+        color: "#1e1e1e",
+    },
+    downloadedTag: {
+        ...styles.downloadedTag,
+        backgroundColor: '#1a4732', // Fundo Verde Escuro
+    },
+    downloadedTagText: {
+        ...styles.downloadedTagText,
+        color: '#a7f3d0', // Texto Verde Claro
     }
 });

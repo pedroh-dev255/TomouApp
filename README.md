@@ -35,7 +35,7 @@ O app é pensado para ser leve, rápido e fácil de usar.
 - 📊 **Histórico completo**  
   Acompanhe sua evolução e a taxa de adesão ao tratamento.
 
-- 🔄 **Repetições diárias/semanais**  
+- 🔄 **Repetições diárias**  
   Configure padrões de tomada de forma prática.
 
 - 🌙 **Tema claro e escuro**  
@@ -48,8 +48,7 @@ O app é pensado para ser leve, rápido e fácil de usar.
 - TypeScript
 - React Navigation
 - AsyncStorage
-- React Native Push Notification
-- Firebase
+- notifee
 - Day.js
 
 ---
@@ -83,11 +82,11 @@ npx react-native run-ios
 ---
 
 ## 🗂️ Roadmap
-- [ ] Autenticação  
-- [ ] Backup em nuvem  
-- [ ] Notificações inteligentes  
-- [ ] Widget de medicamentos  
-- [ ] Sincronização entre dispositivos  
+
+- [✔️] Notificações inteligentes  
+- [  ] Widget de medicamentos  
+- [  ] Backup em nuvem  
+- [  ] Sincronização entre dispositivos  
 
 ---
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, RefreshControl, useColorScheme} from 'react-native';
 import notifee, { TriggerType, AndroidImportance, AuthorizationStatus, RepeatFrequency, AndroidChannel } from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 const MEDS_KEY = "@tomou:meds";
 const EVENTS_KEY = "@tomou:events";
 const FOLLOWUPS_KEY = "@tomou:followups"; 
+const SETTINGS = "@tomou:settings";
 
 const DebugMeta = ({ label, value, color = '#333' }) => (
     <View style={styles.metaItem}>
@@ -23,6 +24,30 @@ export default function DebugScreen() {
     const [followups, setFollowups] = useState([]);
     const [systemInfo, setSystemInfo] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const colorScheme = useColorScheme();
+    const [settings, setSettings] = useState({});
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const s = await AsyncStorage.getItem(SETTINGS);
+                if (s) {
+                    // Ao carregar, o valor 'theme' será um booleano (true para Dark, false para Light)
+                    setSettings(JSON.parse(s));
+                }
+            } catch (error) {
+                console.error("Erro ao carregar configurações:", error);
+            }
+        };
+
+        loadSettings();
+    }, []);
+
+
+    const isDark = settings.theme ?? colorScheme === 'dark';
+
+    const currentStyles = isDark ? stylesDark : styles;
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -122,11 +147,11 @@ export default function DebugScreen() {
     };
 
     return (
-        <View style={{flex:1, backgroundColor:'#f3f4f6'}}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>🛠️ Painel de Debug (v1.2)</Text>
+        <View style={isDark ? {flex:1, backgroundColor:'#474747ff'} : {flex:1, backgroundColor:'#ffffff'}}>
+            <View style={currentStyles.header}>
+                <Text style={currentStyles.headerTitle}>🛠️ Painel de Debug (v1.2)</Text>
                 <TouchableOpacity onPress={loadData}>
-                    <Icon name="refresh" size={24} color="#4f46e5"/>
+                    <Icon name="refresh" size={24} color="#4e7b96ff"/>
                 </TouchableOpacity>
             </View>
             <ScrollView 
@@ -135,8 +160,8 @@ export default function DebugScreen() {
             >
                 
                 {/* STATUS DO SISTEMA */}
-                <View style={styles.section}>
-                    <Text style={styles.secTitle}>Status do Sistema</Text>
+                <View style={currentStyles.section}>
+                    <Text style={currentStyles.secTitle}>Status do Sistema</Text>
                     <DebugMeta label="Permissão" value={systemInfo.permission} color={systemInfo.permission?.startsWith('✅') ? 'green' : 'red'} />
                     <DebugMeta 
                         label="Canal 'alarme'" 
@@ -144,40 +169,40 @@ export default function DebugScreen() {
                         color={systemInfo.alarmeChannel?.startsWith('✅') ? 'green' : (systemInfo.alarmeChannel?.startsWith('⚠️') ? '#f59e0b' : 'red')}
                     />
                     {systemInfo.channelDetails && (
-                        <View style={styles.detailContainer}>
-                            <Text style={styles.detailTitle}>Detalhes do Canal:</Text>
-                            <Text style={styles.detailText}>- ID: {systemInfo.channelDetails.id}</Text>
-                            <Text style={styles.detailText}>- Importância: {systemInfo.channelDetails.importance}</Text>
-                            <Text style={styles.detailText}>- Vibração: {systemInfo.channelDetails.vibration ? 'Sim' : 'Não'}</Text>
+                        <View style={currentStyles.detailContainer}>
+                            <Text style={currentStyles.detailTitle}>Detalhes do Canal:</Text>
+                            <Text style={currentStyles.detailText}>- ID: {systemInfo.channelDetails.id}</Text>
+                            <Text style={currentStyles.detailText}>- Importância: {systemInfo.channelDetails.importance}</Text>
+                            <Text style={currentStyles.detailText}>- Vibração: {systemInfo.channelDetails.vibration ? 'Sim' : 'Não'}</Text>
                         </View>
                     )}
                 </View>
                 
                 {/* AÇÕES */}
-                <View style={styles.section}>
-                    <Text style={styles.secTitle}>Ferramentas de Teste</Text>
+                <View style={currentStyles.section}>
+                    <Text style={currentStyles.secTitle}>Ferramentas de Teste</Text>
                     <View style={{flexDirection:'row', gap:10}}>
-                        <TouchableOpacity style={[styles.btn, {backgroundColor:'#4f46e5'}]} onPress={testNotification}>
-                            <Text style={styles.btnText}>🔔 Testar em 5s</Text>
+                        <TouchableOpacity style={[currentStyles.btn, {backgroundColor:'#4e7b96ff'}]} onPress={testNotification}>
+                            <Text style={currentStyles.btnText}>🔔 Testar em 5s</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.btn, {backgroundColor:'#ef4444'}]} onPress={clearAll}>
-                            <Text style={styles.btnText}>🗑️ Limpar Tudo</Text>
+                        <TouchableOpacity style={[currentStyles.btn, {backgroundColor:'#ef4444'}]} onPress={clearAll}>
+                            <Text style={currentStyles.btnText}>🗑️ Limpar Tudo</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* NOTIFICAÇÕES NO SISTEMA */}
-                <View style={styles.section}>
-                    <Text style={styles.secTitle}>Agendado no Android ({scheduled.length})</Text>
-                    {scheduled.length === 0 && <Text style={{color:'#888', fontStyle: 'italic'}}>Nada agendado (Notifee.getTriggerNotifications()).</Text>}
+                <View style={currentStyles.section}>
+                    <Text style={currentStyles.secTitle}>Agendado no Android ({scheduled.length})</Text>
+                    {scheduled.length === 0 && <Text style={isDark ? {color:'#d6d6d6ff', fontStyle: 'italic'} : {color:'#3f3f3fff', fontStyle: 'italic'}}>Nada agendado (Notifee.getTriggerNotifications()).</Text>}
                     {scheduled.map((t, i) => (
-                        <View key={t.notification.id || i} style={[styles.item, {borderLeftColor: '#4f46e5'}]}>
-                            <Text style={{fontWeight:'bold', color:'#333', fontSize: 14}}>
+                        <View key={t.notification.id || i} style={[currentStyles.item, {borderLeftColor: '#4e7b96ff'}]}>
+                            <Text style={ isDark ? {fontWeight:'bold', color:'#ddddddff', fontSize: 14}: {fontWeight:'bold', color:'#313131ff', fontSize: 14}}>
                                 {t.notification.title}
                             </Text>
-                            <DebugMeta label="Execução" value={new Date(t.trigger.timestamp).toLocaleString()} color="#4f46e5" />
-                            <DebugMeta label="Frequência" value={getRepeatText(t.trigger.repeatFrequency)} />
-                            <DebugMeta label="ID Notifee" value={t.notification.id} />
+                            <DebugMeta label="Execução" value={new Date(t.trigger.timestamp).toLocaleString()} color="#4e7b96ff" />
+                            <DebugMeta label="Frequência" value={getRepeatText(t.trigger.repeatFrequency)} color={isDark ? '#d3d3d3ff' : '#757575ff'} />
+                            <DebugMeta label="ID Notifee" value={t.notification.id} color='#757575ff'/>
                             {t.notification.data?.medId && (
                                 <DebugMeta label="Dados (medId)" value={t.notification.data.medId} color="#10b981" />
                             )}
@@ -189,26 +214,26 @@ export default function DebugScreen() {
                 </View>
 
                 {/* REMÉDIOS NO BANCO */}
-                <View style={styles.section}>
-                    <Text style={styles.secTitle}>Banco de Dados (AsyncStorage: {MEDS_KEY}) - {meds.length}</Text>
-                    {meds.length === 0 && <Text style={{color:'#888', fontStyle: 'italic'}}>Nenhum medicamento encontrado no banco.</Text>}
+                <View style={currentStyles.section}>
+                    <Text style={currentStyles.secTitle}>Banco de Dados (AsyncStorage: {MEDS_KEY}) - {meds.length}</Text>
+                    {meds.length === 0 && <Text style={ isDark ? {color:'#7c7c7cff', fontStyle: 'italic'} :{color:'#3a3a3aff', fontStyle: 'italic'}}>Nenhum medicamento encontrado no banco.</Text>}
                     {meds.map(m => (
-                        <View key={m.id} style={[styles.item, {borderLeftColor: m.color || '#333'}]}>
-                            <Text style={{fontWeight:'bold', fontSize: 14, color: m.color || '#333'}}>{m.name}</Text>
-                            <DebugMeta label="Horários" value={m.times.join(", ")} />
-                            <DebugMeta label="Intervalo (h)" value={m.intervalHours || 'N/A'} />
-                            <DebugMeta label="Ícone" value={`${m.icon} (${m.color})`} />
-                            <DebugMeta label="ID Local" value={m.id} />
+                        <View key={m.id} style={[currentStyles.item, {borderLeftColor: m.color || '#333'}]}>
+                            <Text style={{fontWeight:'bold', fontSize: 14, color: m.color || '#9b9b9bff'}}>{m.name}</Text>
+                            <DebugMeta color={isDark ? '#d3d3d3ff' : '#3b3b3bff'} label="Horários" value={m.times.join(", ")} />
+                            <DebugMeta color={isDark ? '#d3d3d3ff' : '#3b3b3bff'} label="Intervalo (h)" value={m.intervalHours || 'N/A'} />
+                            <DebugMeta color={isDark ? '#d3d3d3ff' : '#3b3b3bff'} label="Ícone" value={`${m.icon} (${m.color})`} />
+                            <DebugMeta color={isDark ? '#d3d3d3ff' : '#3b3b3bff'} label="ID Local" value={m.id} />
                         </View>
                     ))}
                 </View>
                 
                 {/* ACOMPANHAMENTOS (FOLLOW-UPS) - NOVO BLOCO */}
-                <View style={styles.section}>
-                    <Text style={styles.secTitle}>Acompanhamentos ({FOLLOWUPS_KEY}) - {followups.length}</Text>
+                <View style={currentStyles.section}>
+                    <Text style={currentStyles.secTitle}>Acompanhamentos ({FOLLOWUPS_KEY}) - {followups.length}</Text>
                     {followups.length === 0 && <Text style={{color:'#888', fontStyle: 'italic'}}>Nenhum acompanhamento (follow-up) encontrado no banco.</Text>}
                     {followups.slice(0, 5).map(f => ( // Limitar a 5 para resumo
-                        <View key={f.id} style={[styles.item, {borderLeftColor: '#059669'}]}>
+                        <View key={f.id} style={[currentStyles.item, {borderLeftColor: '#059669'}]}>
                             <Text style={{fontWeight:'bold', fontSize: 14, color: '#059669'}}>{f.title || f.name || 'Sem Título'}</Text>
                             <DebugMeta label="Tipo" value={f.type || 'Geral'} />
                             <DebugMeta label="Próx. Data" value={new Date(f.nextDue).toLocaleDateString() || 'N/A'} color="#059669" />
@@ -222,14 +247,14 @@ export default function DebugScreen() {
                 {/* FIM: NOVO BLOCO */}
 
                 {/* EVENTOS DE TOMADA */}
-                <View style={styles.section}>
-                    <Text style={styles.secTitle}>Eventos de Tomada ({EVENTS_KEY}) - {Object.keys(events).length} dias registrados</Text>
+                <View style={currentStyles.section}>
+                    <Text style={currentStyles.secTitle}>Eventos de Tomada ({EVENTS_KEY}) - {Object.keys(events).length} dias registrados</Text>
                     {Object.keys(events).length === 0 && <Text style={{color:'#888', fontStyle: 'italic'}}>Nenhum evento registrado (Tomadas).</Text>}
                     {Object.keys(events).reverse().slice(0, 3).map(date => (
-                        <View key={date} style={[styles.item, {borderLeftColor: '#4f46e5'}]}>
-                            <Text style={{fontWeight:'bold', color:'#4f46e5'}}>{date}</Text>
+                        <View key={date} style={[currentStyles.item, {borderLeftColor: '#4e7b96ff'}]}>
+                            <Text style={{fontWeight:'bold', color:'#4e7b96ff'}}>{date}</Text>
                             {events[date].map((e, i) => (
-                                <Text key={i} style={styles.detailText}>- {e.medName} às {e.time} (Tomado: {new Date(e.takenAt).toLocaleTimeString()})</Text>
+                                <Text key={i} style={currentStyles.detailText}>- {e.medName} às {e.time} (Tomado: {new Date(e.takenAt).toLocaleTimeString()})</Text>
                             ))}
                         </View>
                     ))}
@@ -319,5 +344,66 @@ const styles = StyleSheet.create({
     detailText: {
         fontSize: 11,
         color: '#4b5563',
+    }
+});
+
+const stylesDark = StyleSheet.create({
+    ...styles, // Herda a estrutura
+    container: { backgroundColor: '#3a3a3aff' },
+    header: { 
+        ...styles.header,
+        backgroundColor: '#383838ff', 
+        borderColor: '#333',
+    },
+    headerTitle: { ...styles.headerTitle, color: '#FFFFFF' },
+    section: { 
+        ...styles.section,
+        backgroundColor:'#323232', 
+        shadowColor: "#000",
+        shadowOpacity: 0.4,
+        elevation: 5,
+    },
+    secTitle: { 
+        ...styles.secTitle, 
+        color:'#CCCCCC', 
+        borderColor:'#333', 
+    },
+    item: { 
+        ...styles.item, 
+        color:'#FFFFFF',
+        borderLeftColor:'#90C0FF', // Cor principal mais clara
+        backgroundColor: '#292929',
+    },
+    itemTitle: { 
+        ...styles.itemTitle, 
+        color:'#575353ff', 
+    },
+    metaLabel: {
+        ...styles.metaLabel,
+        color: '#AAAAAA',
+    },
+    metaValue: {
+        ...styles.metaValue,
+        color: '#EEEEEE',
+    },
+    detailContainer: {
+        ...styles.detailContainer,
+        backgroundColor: '#333333',
+    }, 
+    detailTitle: {
+        ...styles.detailTitle,
+        color: '#CCCCCC',
+    },
+    detailText: {
+        ...styles.detailText,
+        color: '#BBBBBB',
+    },
+    emptyText: {
+        color:'#AAAAAA', 
+    },
+    footerText: {
+        fontSize: 12, 
+        color: '#AAAAAA', 
+        marginTop: 5
     }
 });
