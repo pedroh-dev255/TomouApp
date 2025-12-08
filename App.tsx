@@ -1,78 +1,58 @@
-// App.tsx
+// App.tsx (simplificado)
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet, useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import notifee from "@notifee/react-native";
-// Importações de Navegação
+
+// Navegação
 import { NavigationContainer, DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Importação das telas
-import HomeScreen     from "./src/screens/HomeScreen";
-import ConfigsScreen  from "./src/screens/ConfigsScreen";
+// Serviços
+import { initializeChannels } from './src/services/notificationService';
+import { loadSettings } from './src/utils/storage';
+
+// Telas
+import HomeScreen from "./src/screens/HomeScreen";
+import ConfigsScreen from "./src/screens/ConfigsScreen";
 import ReleasesScreen from "./src/screens/ReleasesScreen";
-import DebugScreen    from './src/screens/DebugScreen';
+import DebugScreen from './src/screens/DebugScreen';
 
-const SETTINGS = "@tomou:settings";
-
-interface AppSettings {
+interface Settings {
   theme?: boolean;
 }
 
-// Define o Stack Navigator
 const Stack = createNativeStackNavigator();
-
-async function bootstrap() {
-  try {
-    await notifee.createChannel({
-      id: "alarme",
-      name: "Tomou Alarmes",
-      sound: "alarme",
-      importance: 4,
-      vibration: true,
-    });
-
-    console.log("Channels created no app");
-  } catch (e) {
-    console.warn("bootstrap notifee", e);
-  }
-}
 
 function App() {
   const colorScheme = useColorScheme();
-  const [settings, setSettings] = useState<AppSettings>({});
+  const [settings, setSettings] = useState<Settings>({});
 
   useEffect(() => {
-    const loadSettings = async () => {
-        try {
-          const s = await AsyncStorage.getItem(SETTINGS);
-          if (s) {
-            setSettings(JSON.parse(s));
-          }
-        } catch (error) {
-          console.error("Erro ao carregar configurações:", error);
-        }
+    const loadAppSettings = async () => {
+      try {
+        const s = await loadSettings();
+        setSettings(s);
+      } catch (error) {
+        console.error("Erro ao carregar configurações:", error);
+      }
     };
-    loadSettings();
+    
+    loadAppSettings();
+    initializeChannels();
   }, []);
 
   const isDarkMode = settings.theme ?? colorScheme === 'dark';
 
-  useEffect(() => {
-    bootstrap();
-  }, []);
-  
-  // 1. Define o tema de navegação personalizado (Customizing the Navigation Theme)
+  // Tema de navegação
   const navTheme: Theme = isDarkMode
     ? {
         ...DarkTheme,
         colors: {
           ...DarkTheme.colors,
-          primary: '#4f46e5', // Cor primária (ícones, botões)
-          background: '#121212', // Fundo principal da tela (sempre #121212 para tema dark)
-          card: '#1e1e1e', // Cor de fundo dos cabeçalhos e elementos de navegação
-          text: '#ffffff', // Cor padrão do texto
+          primary: '#4f46e5',
+          background: '#121212',
+          card: '#1e1e1e',
+          text: '#ffffff',
         },
       }
     : {
@@ -80,50 +60,27 @@ function App() {
         colors: {
           ...DefaultTheme.colors,
           primary: '#4f46e5',
-          background: '#f3f4f6', // Fundo principal da tela (#f3f4f6 para tema light)
-          card: '#ffffff', // Cor de fundo dos cabeçalhos
-          text: '#1f2937', // Cor padrão do texto
+          background: '#f3f4f6',
+          card: '#ffffff',
+          text: '#1f2937',
         },
       };
 
   return (
     <SafeAreaProvider style={isDarkMode ? darkStyles.container : styles.container}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={isDarkMode ? navTheme.colors.card : navTheme.colors.card} />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       
-      <NavigationContainer>
+      <NavigationContainer theme={navTheme}>
         <Stack.Navigator 
           initialRouteName="Home"
-          screenOptions={{ 
-            headerShown: false,
-          }}
+          screenOptions={{ headerShown: false }}
         >
-        <Stack.Screen name="Home" component={HomeScreen} />
-
-        <Stack.Screen 
-          name="Configs" 
-          component={ConfigsScreen} 
-          options={{ title: 'Configs', headerShown: false }}
-        />
-
-        <Stack.Screen 
-          name="Releases" 
-          component={ReleasesScreen} 
-          options={{ 
-            title: 'Atualizações',
-          }}
-        />
-
-        <Stack.Screen 
-          name="Debug" 
-          component={DebugScreen} 
-          options={{ 
-            title: 'Debug',
-          }} 
-        />
-
-      </Stack.Navigator>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Configs" component={ConfigsScreen} />
+          <Stack.Screen name="Releases" component={ReleasesScreen} />
+          <Stack.Screen name="Debug" component={DebugScreen} />
+        </Stack.Navigator>
       </NavigationContainer>
-      
     </SafeAreaProvider>
   );
 }
