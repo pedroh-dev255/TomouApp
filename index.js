@@ -31,29 +31,31 @@ initLogger().then(() => {
 notifee.onBackgroundEvent(async ({ type, detail }) => {
   try {
     logInfo('Background event received', { type, detail });
-    
-    const { notification } = detail;
-    const data = notification.data || {};
 
-    logInfo('BG TRIGGER - kind:', data?.kind);
-    if (data?.kind === NOTIFICATION_TYPES.INITIAL) {
-      const allMeds = await loadMeds();
-      const med = allMeds.find(m => m.id === data.medId);
-      if (!med) {
-        logWarn('Medicamento não encontrado, pulando follow-ups.');
-        return;
-      }
-      logInfo('Agendando follow-ups no background para:', med.name);
-      const result = await scheduleFollowups(med, data);
-      if (result) {
-        await saveFollowup(result.key, result.followupIds);
-        logInfo('Follow-ups salvos no background:', { count: result.followupIds.length });
+    if(type === EventType.DELIVERED) {
+      const { notification } = detail;
+      const data = notification.data || {};
+
+      logInfo('BG TRIGGER - kind:', data?.kind);
+      if (data?.kind === NOTIFICATION_TYPES.INITIAL) {
+        const allMeds = await loadMeds();
+        const med = allMeds.find(m => m.id === data.medId);
+        if (!med) {
+          logWarn('Medicamento não encontrado, pulando follow-ups.');
+          return;
+        }
+        logInfo('Agendando follow-ups no background para:', med.name);
+        const result = await scheduleFollowups(med, data);
+        if (result) {
+          await saveFollowup(result.key, result.followupIds);
+          logInfo('Follow-ups salvos no background:', { count: result.followupIds.length });
+        }
       }
     }
     
-    
     // 2. BOTÃO PRESSIONADO
     else if (type === EventType.ACTION_PRESS) {
+
       const { pressAction, notification } = detail;
       const data = notification.data || {};
       

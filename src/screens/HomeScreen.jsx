@@ -97,23 +97,25 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     return notifee.onForegroundEvent(async ({ type, detail }) => {
-        const { notification } = detail;
-        const data = notification.data || {};
-
-            
-        // Agendar follow-ups se for notificação inicial
-        if (data.kind === NOTIFICATION_TYPES.INITIAL) {
-            const allMeds = await loadMeds();
-            const med = allMeds.find(m => m.id === data.medId);
-
-            if (!med) {
-                console.log("Medicamento não encontrado, pulando follow-ups.");
-                return;
-            }
-            console.log("Agendando follow-ups para med:", med);
-            await scheduleFollowups(med, data);
-        }
         
+        if(type === EventType.DELIVERED) {
+            const { notification } = detail;
+            const data = notification.data || {};
+
+            // Agendar follow-ups se for notificação inicial
+            if (data.kind === NOTIFICATION_TYPES.INITIAL) {
+                const allMeds = await loadMeds();
+                const med = allMeds.find(m => m.id === data.medId);
+
+                if (!med) {
+                    console.log("Medicamento não encontrado, pulando follow-ups.");
+                    return;
+                }
+                console.log("Agendando follow-ups para med:", med);
+                await scheduleFollowups(med, data);
+            }
+        }
+            
 
         if (type === EventType.ACTION_PRESS && detail.pressAction) {
             const { pressAction, notification } = detail;
