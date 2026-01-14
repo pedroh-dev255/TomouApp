@@ -21,6 +21,7 @@
     "react": "19.1.1",
     "react-native": "0.82.1",
     "react-native-apk-install": "^1.0.2",
+    "react-native-battery-optimization-check": "^1.0.8",
     "react-native-calendars": "^1.1313.0",
     "react-native-device-info": "^15.0.1",
     "react-native-fs": "^2.20.0",

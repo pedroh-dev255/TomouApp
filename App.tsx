@@ -2,6 +2,13 @@
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet, useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  BatteryOptEnabled,
+  OpenOptimizationSettings,
+  RequestDisableOptimization,
+} from 'react-native-battery-optimization-check';
+import { Platform, Alert, Linking } from 'react-native';
+
 
 // Navegação
 import { NavigationContainer, DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
@@ -28,6 +35,7 @@ function App() {
   const [settings, setSettings] = useState<Settings>({});
 
   useEffect(() => {
+    checkBatterySaver();
     const loadAppSettings = async () => {
       try {
         const s = await loadSettings();
@@ -40,6 +48,20 @@ function App() {
     loadAppSettings();
     initializeChannels();
   }, []);
+
+  async function checkBatterySaver() {
+    if (Platform.OS === 'android') {
+      const isOptimized = await BatteryOptEnabled();
+      if (isOptimized) {
+        await Alert.alert(
+          'Economia de bateria ativa',
+          'Para notificações funcionarem corretamente, desative o modo de economia de bateria para este app.'
+        );
+
+        await RequestDisableOptimization();
+      }
+    }
+  }
 
   const isDarkMode = settings.theme ?? colorScheme === 'dark';
 
